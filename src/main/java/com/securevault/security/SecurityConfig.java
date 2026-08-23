@@ -54,7 +54,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",      // User registration
                                 "/api/auth/login",         // User login
-                                "/api/password/**"         // Password generator utilities
+                                "/api/password/**",        // Password generator utilities
+                                "/actuator/health"         // Health check endpoint
                         ).permitAll()
 
                         // PROTECTED endpoints - require JWT authentication
@@ -95,7 +96,7 @@ public class SecurityConfig {
             "http://127.0.0.1:3000",
             "http://localhost:3001",
             "http://127.0.0.1:3001",
-            "https://securevault-frontend.onrender.com"  // Production frontend URL
+            "https://securevault-frontend-ltdm.onrender.com"  // Production frontend URL
         ));
         
         // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
