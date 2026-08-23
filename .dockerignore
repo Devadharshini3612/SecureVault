@@ -1,0 +1,59 @@
+# ============================================
+# .dockerignore file for SecureVault
+# ============================================
+# Excludes files from Docker build context
+# Reduces image size and build time
+# ============================================
+
+# Maven build output
+target/
+!target/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in image)
+*.md
+!README.md
+docs/
+
+# Environment files (secrets should not be in image)
+.env
+.env.*
+*.env
+
+# Logs
+logs/
+*.log
+
+# Test files
+src/test/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Docker files (don't need these in the image)
+Dockerfile
+docker-compose.yml
+.dockerignore

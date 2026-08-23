@@ -1,0 +1,74 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: securevault-db
+    env: docker
+    plan: free
+    region: oregon
+    
+  # Redis Cache
+  - type: redis
+    name: securevault-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+    
+  # Spring Boot Backend
+  - type: web
+    name: securevault-backend
+    env: java
+    region: oregon
+    plan: free
+    buildCommand: mvn clean install -DskipTests
+    startCommand: java -jar target/securevault-0.0.1-SNAPSHOT.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: securevault-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: securevault-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: securevault-db
+          property: password
+      - key: SPRING_REDIS_HOST
+        fromService:
+          name: securevault-redis
+          type: redis
+          property: host
+      - key: SPRING_REDIS_PORT
+        fromService:
+          name: securevault-redis
+          type: redis
+          property: port
+      - key: SPRING_REDIS_PASSWORD
+        fromService:
+          name: securevault-redis
+          type: redis
+          property: password
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: AES_ENCRYPTION_KEY
+        generateValue: true
+      - key: MAIL_USERNAME
+        value: dharshinimurali63@gmail.com
+      - key: MAIL_PASSWORD
+        value: pltfwwalplgcjckn
+      - key: EMAIL_ENABLED
+        value: true
+      - key: SERVER_PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+databases:
+  - name: securevault-db
+    databaseName: securevault
+    user: securevault
+    plan: free
+    region: oregon

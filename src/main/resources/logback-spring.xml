@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    
+    <!-- ========================================
+         PROPERTY DEFINITIONS
+         ======================================== -->
+    
+    <!-- Base log directory - can be overridden by environment variable -->
+    <property name="LOG_DIR" value="${LOG_DIR:-./logs}" />
+    
+    <!-- Application name for log file naming -->
+    <property name="APP_NAME" value="securevault" />
+    
+    <!-- Log pattern for console output (standard pattern without color) -->
+    <property name="CONSOLE_LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] [%X{correlationId:-}] %-40.40logger{39} : %m%n%ex" />
+    
+    <!-- Log pattern for file output (no colors, includes more details) -->
+    <property name="FILE_LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n%ex" />
+    
+    <!-- Security log pattern (specialized for security events) -->
+    <property name="SECURITY_LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [SECURITY] [%X{correlationId:-}] [%X{clientIp:-}] [%X{userAgent:-}] %-5level %logger{36} - %msg%n" />
+    
+    <!-- Audit log pattern (specialized for audit trail) -->
+    <property name="AUDIT_LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [AUDIT] [%X{correlationId:-}] [%X{userId:-}] [%X{operation:-}] %-5level %logger{36} - %msg%n" />
+    
+    <!-- Performance log pattern (specialized for performance metrics) -->
+    <property name="PERFORMANCE_LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [PERF] [%X{correlationId:-}] [%X{endpoint:-}] [%X{method:-}] [%X{duration:-}ms] [%X{statusCode:-}] %-5level %logger{36} - %msg%n" />
+
+    <!-- ========================================
+         CONSOLE APPENDER
+         ======================================== -->
+    
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <!-- Only log INFO and above to console in production -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <!-- ========================================
+         FILE APPENDERS - MAIN APPLICATION LOG
+         ======================================== -->
+    
+    <!-- Main application log with rolling policy -->
+    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-application.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily rotation -->
+            <fileNamePattern>${LOG_DIR}/archive/${APP_NAME}-application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            
+            <!-- Size-based rollover within a day -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            
+            <!-- Keep 30 days worth of logs -->
+            <maxHistory>30</maxHistory>
+            
+            <!-- Total size cap (remove oldest files when exceeded) -->
+            <totalSizeCap>5GB</totalSizeCap>
+            
+            <!-- Clean up on startup -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        
+        <!-- Include all levels from DEBUG and above -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <!-- ========================================
+         SPECIALIZED LOG APPENDERS
+         ======================================== -->
+    
+    <!-- Security events log -->
+    <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-security.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/${APP_NAME}-security.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>90</maxHistory> <!-- Keep security logs longer -->
+            <totalSizeCap>1GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>${SECURITY_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- Audit trail log -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-audit.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/${APP_NAME}-audit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>20MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>365</maxHistory> <!-- Keep audit logs for 1 year -->
+            <totalSizeCap>2GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>${AUDIT_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- Performance metrics log -->
+    <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-performance.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/${APP_NAME}-performance.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>30MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>${PERFORMANCE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- Error-only log for critical issues -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-error.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/${APP_NAME}-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        
+        <!-- Only ERROR and FATAL levels -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- ========================================
+         ASYNC APPENDER WRAPPERS (For Performance)
+         ======================================== -->
+    
+    <!-- Async wrapper for main application log -->
+    <appender name="ASYNC_APPLICATION" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="APPLICATION_FILE"/>
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
+    </appender>
+    
+    <!-- Async wrapper for security log -->
+    <appender name="ASYNC_SECURITY" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="SECURITY_FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>false</neverBlock> <!-- Security logs should not be dropped -->
+    </appender>
+    
+    <!-- Async wrapper for audit log -->
+    <appender name="ASYNC_AUDIT" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="AUDIT_FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>false</neverBlock> <!-- Audit logs should not be dropped -->
+    </appender>
+
+    <!-- ========================================
+         LOGGER CONFIGURATIONS
+         ======================================== -->
+    
+    <!-- Specialized loggers for different concerns -->
+    
+    <!-- Security logger -->
+    <logger name="SECURITY" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_SECURITY"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Audit logger -->
+    <logger name="AUDIT" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Performance logger -->
+    <logger name="PERFORMANCE" level="DEBUG" additivity="false">
+        <appender-ref ref="PERFORMANCE_FILE"/>
+    </logger>
+    
+    <!-- SecureVault application loggers -->
+    <logger name="com.securevault" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Spring Framework loggers (reduce verbosity) -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.springframework.web" level="DEBUG"/>
+    <logger name="org.springframework.security" level="DEBUG"/>
+    <logger name="org.springframework.transaction" level="DEBUG"/>
+    
+    <!-- Hibernate/JPA loggers -->
+    <logger name="org.hibernate" level="INFO"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    
+    <!-- Database connection pool -->
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+    <logger name="com.zaxxer.hikari.HikariConfig" level="DEBUG"/>
+    
+    <!-- Root logger configuration -->
+    <root level="INFO">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- ========================================
+         PROFILE-SPECIFIC CONFIGURATIONS
+         ======================================== -->
+    
+    <!-- Development profile - more verbose logging to console -->
+    <springProfile name="dev">
+        <logger name="com.securevault" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        
+        <!-- Enable SQL parameter logging in development -->
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+        
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="APPLICATION_FILE"/>
+        </root>
+    </springProfile>
+    
+    <!-- Test profile - minimal logging, focus on test output -->
+    <springProfile name="test">
+        <logger name="com.securevault" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+    
+    <!-- Production profile - optimized for performance and security -->
+    <springProfile name="prod">
+        <logger name="com.securevault" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        
+        <!-- Disable console logging in production (use file logs only) -->
+        <root level="INFO">
+            <appender-ref ref="ASYNC_APPLICATION"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- ========================================
+         JMX CONFIGURATION (Optional)
+         ======================================== -->
+    
+    <!-- Enable JMX for runtime log level management -->
+    <jmxConfigurator />
+    
+    <!-- ========================================
+         SHUTDOWN HOOK (Ensures proper cleanup)
+         ======================================== -->
+    
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+    
+</configuration>

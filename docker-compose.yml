@@ -1,0 +1,170 @@
+# ============================================
+# Docker Compose Configuration for SecureVault
+# Complete Development Environment
+# ============================================
+# Services:
+#   - securevault: Spring Boot application
+#   - postgres: PostgreSQL database
+#   - redis: Redis cache server
+# ============================================
+
+services:
+  # ============================================
+  # PostgreSQL Database Service
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: securevault-postgres
+    restart: unless-stopped
+    
+    environment:
+      # Database configuration
+      POSTGRES_DB: securevault
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      
+      # Performance tuning
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_MAX_CONNECTIONS: 100
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Persist database data
+      - postgres_data:/var/lib/postgresql/data
+      # Optional: Custom initialization scripts
+      # - ./docker/init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - securevault-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Redis Cache Service
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: securevault-redis
+    restart: unless-stopped
+    
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      # Persist Redis data (optional for cache)
+      - redis_data:/data
+    
+    networks:
+      - securevault-network
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # SecureVault Application Service
+  # ============================================
+  securevault:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: securevault-app
+    restart: unless-stopped
+    
+    ports:
+      - "8080:8080"
+    
+    environment:
+      # ============================================
+      # Database Configuration
+      # ============================================
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/securevault
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+      
+      # ============================================
+      # Redis Configuration
+      # ============================================
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+      SPRING_REDIS_DATABASE: 0
+      
+      # ============================================
+      # Security Configuration
+      # ============================================
+      # JWT Secret Key (Base64 encoded)
+      # IMPORTANT: Change this in production!
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-YXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZg==}
+      JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME:-86400000}
+      
+      # AES Encryption Key (Base64 encoded)
+      # IMPORTANT: Change this in production!
+      AES_ENCRYPTION_KEY: ${AES_ENCRYPTION_KEY:-YXNkZmFzZGZhc2RmYXNkZmFzZGZhc2Rm}
+      
+      # ============================================
+      # Application Configuration
+      # ============================================
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-dev}
+      
+      # JPA/Hibernate
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: ${SHOW_SQL:-false}
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      
+      # Logging
+      LOGGING_LEVEL_COM_SECUREVAULT: ${LOG_LEVEL:-INFO}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: ${SPRING_LOG_LEVEL:-WARN}
+      
+      # ============================================
+      # JVM Configuration
+      # ============================================
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    networks:
+      - securevault-network
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  securevault-network:
+    driver: bridge
+    name: securevault-network
+
+# ============================================
+# Volumes (Persistent Data)
+# ============================================
+volumes:
+  postgres_data:
+    name: securevault-postgres-data
+    driver: local
+  
+  redis_data:
+    name: securevault-redis-data
+    driver: local
