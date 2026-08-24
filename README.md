@@ -10,9 +10,21 @@
 
 **A modern, secure, and feature-rich password management solution for enterprises and individuals**
 
-[Features](#features) • [Installation](#installation) • [Usage](#usage) • [API Documentation](#api-documentation) • [Security](#security)
+🌐 **[Live Demo](https://securevault-frontend-ltdm.onrender.com)** | 📘 **[API Docs](#api-documentation)** | 🔐 **[Security](#security-features)**
 
 </div>
+
+---
+
+## 🚀 Live Deployment
+
+**Try it now!** The application is deployed and running:
+
+- **Frontend:** https://securevault-frontend-ltdm.onrender.com
+- **Backend API:** https://securevault-backend-mtoh.onrender.com
+- **Status:** ✅ Live on Render.com
+
+> **Note:** Free tier may have ~30-60 second cold start after 15 minutes of inactivity.
 
 ---
 
